@@ -5,6 +5,20 @@
 profile_default/
 ipython_config.py
 
+# Dataset
 doodle/
 
+# Ignore AI/ML model files
+*.joblib
+*.pkl
+*.pickle
+*.h5
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.pb
+*.tflite
+*.sav
+*.model
 
