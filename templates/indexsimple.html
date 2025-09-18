@@ -42,10 +42,9 @@
   src="{{ url_for('static', filename='crabrave.mp3') }}"
   loop
 ></audio>
-
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 <script>
-  const sock = io();
+  const sock = io("http://doodlenoodle.echowords.xyz");
   const draw = document.getElementById("draw");
   const ctx = draw.getContext("2d");
   const floor = document.getElementById("floor");
