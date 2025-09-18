@@ -121,4 +121,4 @@ def game_loop():
 threading.Thread(target=game_loop, daemon=True).start()
 
 # run
-sio.run(app, debug=True, port=5000)
+sio.run(app, debug=True, port=5002)
