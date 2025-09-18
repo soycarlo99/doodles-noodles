@@ -1,3 +1,6 @@
+import eventlet
+
+eventlet.monkey_patch()
 import base64
 import io
 import threading
@@ -12,7 +15,7 @@ from flask_socketio import SocketIO, emit
 from PIL import Image, ImageOps
 
 app = Flask(__name__)
-sio = SocketIO(app, cors_allowed_origins="*")
+sio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
 
 # load ML stuff
 model, scaler, labels = (
@@ -121,4 +124,5 @@ def game_loop():
 threading.Thread(target=game_loop, daemon=True).start()
 
 # run
-sio.run(app, debug=False, host="0.0.0.0", port=5002)
+# sio.run(app, debug=True, host="0.0.0.0", port=5002)
+sio.run(app, host="0.0.0.0", port=5002, debug=False)
