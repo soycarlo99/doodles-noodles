@@ -1,6 +1,6 @@
-import eventlet
-
-eventlet.monkey_patch()
+# import eventlet
+#
+# eventlet.monkey_patch()
 import base64
 import io
 import threading
@@ -13,16 +13,22 @@ import numpy as np
 from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, emit
 from PIL import Image, ImageOps
+from tensorflow.keras.models import load_model
 
 app = Flask(__name__)
-sio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+# sio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+sio = SocketIO(app, cors_allowed_origins="*")
 
-# load ML stuff
-model, scaler, labels = (
-    joblib.load("quickdraw_model_50.joblib"),
-    joblib.load("quickdraw_scaler_50.joblib"),
-    joblib.load("quickdraw_classes_50.joblib"),
-)
+# svc model loader
+# model, scaler, labels = (
+#     joblib.load("quickdraw_model_50.joblib"),
+#     joblib.load("quickdraw_scaler_50.joblib"),
+#     joblib.load("quickdraw_classes_50.joblib"),
+# )
+
+# cnn model loader
+model = load_model("quickdraw_crab_fish_model.keras")
+labels = ["crab", "fish"]
 
 creatures = []  # list of dicts, oldest first
 MAX = 20
@@ -35,8 +41,11 @@ def to_creature(img_b64, artist):
         "L"
     )  # luminosity
     img = ImageOps.invert(img).resize((28, 28))
-    X = scaler.transform(np.array(img, dtype=np.float32).reshape(1, -1) / 255.0)
-    probs = model.predict_proba(X)[0]
+    # X = scaler.transform(np.array(img, dtype=np.float32).reshape(1, -1) / 255.0) #for svc
+    X = np.array(img, dtype=np.float32) / 255.0  # for cnn
+    X = X.reshape(1, 28, 28, 1)  # only for cnn REMOVEEE WHEN TESTING SNC
+    # probs = model.predict_proba(X)[0] # svc
+    probs = model.predict(X)[0]
     idx = int(np.argmax(probs))  # define first
     conf = float(probs[idx])  # use after
     if conf < 0.5:
@@ -108,7 +117,7 @@ def game_loop():
                 c["x"] += c["dir"] * c["speed"]
                 if c["x"] <= 30:
                     c["x"], c["dir"] = 30, 1
-                if c["x"] >= 770:
+                if c["x"] >= 970:
                     c["x"], c["dir"] = 770, -1
             c["phase"] = (c["phase"] + 0.1) % 6.28
         if creatures:
@@ -125,4 +134,4 @@ threading.Thread(target=game_loop, daemon=True).start()
 
 # run
 # sio.run(app, debug=True, host="0.0.0.0", port=5002)
-sio.run(app, host="0.0.0.0", port=5002, debug=False)
+sio.run(app, host="0.0.0.0", port=5002, debug=True)
