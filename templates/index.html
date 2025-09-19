@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Crab & Fish Rave</title>
+    <style>
+      body {
+        margin: 0;
+        background: #1e1e1e;
+        color: #f5f5f5;
+        font-family: "Segoe UI", Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 20px;
+        gap: 20px;
+      }
+
+      #draw {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        border: none;
+      }
+
+      #floor {
+        width: 1000px;
+        height: 500px;
+        background: skyblue;
+        border-radius: 16px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+        display: block;
+      }
+
+      .side-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 280px;
+      }
+
+      input {
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #444;
+        font-size: 14px;
+        width: 100%;
+        box-sizing: border-box;
+        background: #2a2a2a;
+        color: #fff;
+      }
+
+      button {
+        padding: 10px;
+        font-size: 15px;
+        border: none;
+        border-radius: 8px;
+        background: #444;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      button:hover {
+        background: #666;
+      }
+
+      #feedback {
+        height: 20px;
+        font-size: 13px;
+        color: #ccc;
+      }
+
+      p {
+        margin: 6px 0 0;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="draw" width="420" height="420"></canvas>
+
+    <div class="side-panel">
+      <input id="name" placeholder="Artist name (optional)" />
+      <button id="submit">Submit drawing</button>
+      <button id="clear">Clear</button>
+      <div id="feedback"></div>
+      <p>Creatures: <span id="count">0</span></p>
+    </div>
+
+    <canvas id="floor" width="1000" height="500"></canvas>
+
+    <audio
+      id="music"
+      src="{{ url_for('static', filename='crabrave.mp3') }}"
+      loop
+    ></audio>
+
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+      // const sock = io("https://doodlenoodle.echowords.xyz", {
+      //   transports: ["websocket", "polling"],
+      // });
+      const sock = io();
+
+      const draw = document.getElementById("draw");
+      const ctx = draw.getContext("2d");
+      const floor = document.getElementById("floor");
+      const fctx = floor.getContext("2d");
+      const creatures = {};
+
+      let drawing = false;
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, 420, 420);
+      ctx.strokeStyle = "#000";
+      ctx.lineWidth = 25;
+      ctx.lineCap = "round";
+
+      /* drawing*/
+      draw.onmousedown = (e) => {
+        drawing = true;
+        ctx.beginPath();
+        ctx.moveTo(e.offsetX, e.offsetY);
+      };
+      draw.onmousemove = (e) => {
+        if (drawing) {
+          ctx.lineTo(e.offsetX, e.offsetY);
+          ctx.stroke();
+        }
+      };
+      draw.onmouseup = () => (drawing = false);
+      draw.ontouchstart = (e) => {
+        const t = e.touches[0],
+          r = draw.getBoundingClientRect();
+        ctx.beginPath();
+        ctx.moveTo(t.clientX - r.left, t.clientY - r.top);
+        drawing = true;
+      };
+      draw.ontouchmove = (e) => {
+        if (drawing) {
+          const t = e.touches[0],
+            r = draw.getBoundingClientRect();
+          ctx.lineTo(t.clientX - r.left, t.clientY - r.top);
+          ctx.stroke();
+        }
+      };
+      draw.ontouchend = () => (drawing = false);
+
+      document.getElementById("clear").onclick = () => {
+        ctx.clearRect(0, 0, 420, 420);
+        ctx.fillStyle = "#fff";
+        ctx.fillRect(0, 0, 420, 420);
+        document.getElementById("feedback").textContent = "";
+      };
+
+      /* submit*/
+      document.getElementById("submit").onclick = async () => {
+        const img = draw.toDataURL("image/png");
+        const res = await fetch("/submit_creature", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            image: img,
+            artist: document.getElementById("name").value,
+          }),
+        });
+        const j = await res.json();
+        document.getElementById("feedback").textContent = j.message;
+        if (j.success) {
+          document
+            .getElementById("music")
+            .play()
+            .catch(() =>
+              document.addEventListener(
+                "click",
+                () => document.getElementById("music").play(),
+                { once: true },
+              ),
+            );
+          setTimeout(() => document.getElementById("clear").click(), 2000);
+        }
+      };
+
+      /* socket*/
+      sock.on("add", (c) => {
+        creatures[c.id] = c;
+        c._el = new Image(); // separate property for element
+        c._el.src = c.img;
+        updateCount();
+      });
+
+      sock.on("remove", (d) => {
+        delete creatures[d.id];
+        updateCount();
+      });
+      sock.on("upd", (upd) => {
+        for (let id in upd) {
+          const c = creatures[id];
+          if (c) Object.assign(c, upd[id]);
+        }
+      });
+      function updateCount() {
+        document.getElementById("count").textContent =
+          Object.keys(creatures).length;
+      }
+
+      /* animation loop*/
+      (function loop() {
+        fctx.clearRect(0, 0, 1000, 500);
+        fctx.fillStyle = "skyblue";
+        fctx.fillRect(0, 225, 1000, 500 - 225);
+        fctx.fillStyle = "khaki";
+        fctx.fillRect(0, 0, 1000, 225);
+        for (let id in creatures) {
+          const c = creatures[id];
+          if (!c._el.complete) continue;
+          fctx.save();
+          if (c.type === "fish") {
+            fctx.translate(c.x, c.y + Math.sin(c.phase) * 3);
+            if (c.dir < 0) fctx.scale(-1, 1);
+          } else {
+            fctx.translate(c.x + Math.sin(c.phase) * 8, c.y);
+          }
+          fctx.globalCompositeOperation = "multiply"; //remove the background
+          fctx.drawImage(c._el, -25, -25, 75, 75);
+          fctx.globalCompositeOperation = "source-over";
+          fctx.fillStyle = "rgba(0,0,0,.6)";
+          fctx.fillRect(-30, 30, 60, 20);
+          fctx.fillStyle = "#fff";
+          fctx.font = "10px Arial";
+          fctx.textAlign = "center";
+          fctx.fillText(
+            `${c.type === "fish" ? "🐟" : "🦀"} ${(c.conf * 100).toFixed(0)}%`,
+            0,
+            42,
+          );
+          fctx.restore();
+        }
+        requestAnimationFrame(loop);
+      })();
+    </script>
+  </body>
+</html>
