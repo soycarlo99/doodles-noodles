@@ -1,5 +1,5 @@
 # Doodles Noodles
 ## Dataset source
-https://www.kaggle.com/datasets/ashishjangra27/doodle-dataset
+https://console.cloud.google.com/storage/browser/quickdraw_dataset/full/numpy_bitmap;tab=objects?prefix=&forceOnObjectsSortingFiltering=false
 
 

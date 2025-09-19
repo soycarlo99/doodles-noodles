@@ -1,3 +1,6 @@
+# macos Files managments clutter
+.DS_Store
+
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 
@@ -9,7 +12,6 @@ ipython_config.py
 doodle/
 
 # Ignore AI/ML model files
-*.joblib
 *.pkl
 *.pickle
 *.h5
