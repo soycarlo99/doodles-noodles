@@ -10,6 +10,11 @@ ipython_config.py
 
 # Dataset
 doodle/
+quickdraw_simplified/
+*.npy
+
+# Large model files
+*.joblib
 
 # Ignore AI/ML model files
 *.pkl
