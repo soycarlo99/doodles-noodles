@@ -134,4 +134,4 @@ threading.Thread(target=game_loop, daemon=True).start()
 
 # run
 # sio.run(app, debug=True, host="0.0.0.0", port=5002)
-sio.run(app, host="0.0.0.0", port=5002, debug=False)
+sio.run(app, host="0.0.0.0", port=5002, debug=False, allow_unsafe_werkzeug=True)
