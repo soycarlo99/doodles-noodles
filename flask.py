@@ -111,7 +111,7 @@ def send_all():
 # game loop
 def game_loop():
     while True:
-        time.sleep(0.05)
+        time.sleep(0.05) # 20 fps
         for c in creatures:
             if c["type"] == "fish":
                 c["x"] += c["dir"] * c["speed"]
@@ -134,4 +134,4 @@ threading.Thread(target=game_loop, daemon=True).start()
 
 # run
 # sio.run(app, debug=True, host="0.0.0.0", port=5002)
-sio.run(app, host="0.0.0.0", port=5002, debug=True)
+sio.run(app, host="0.0.0.0", port=5002, debug=False)

@@ -1,0 +1,7 @@
+services:
+  doodles-noodles:
+    build: .
+    container_name: doodles-noodles
+    ports:
+      - "5002:5002"
+    restart: unless-stopped
